@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "adapter_protocol": 1,
+  "claude_code": {
+    "minimum_version": "2.1.217",
+    "tested_versions": [
+      "2.1.217"
+    ]
+  },
+  "claude_nagger_core": {
+    "command": "claude-nagger",
+    "minimum_version": "0.4.0",
+    "dispatch": "hook"
+  },
+  "missing_core_policy": "diagnostic_fail_open",
+  "dependency_install_policy": "explicit_only"
+}

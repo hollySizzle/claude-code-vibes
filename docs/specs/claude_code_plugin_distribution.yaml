@@ -101,6 +101,16 @@ runtime_opt_in_boundary:
   explicit_initialization: install-hooks の設定生成経路は維持する
   residual_boundary: hook classの直接生成はtemp loggerを初期化し得るため、plugin adapterは副作用なしpreflightを持つCLI dispatchを使用する
 
+first_party_plugin_adapter:
+  status: implemented
+  source: plugins/claude-nagger/
+  entrypoint: scripts/dispatch-hook.sh
+  dependency_policy: core CLIは利用者が明示installし、hook内ではinstall/updateしない
+  missing_core_policy: diagnosticをstderrへ出してfail-openする
+  compatibility_declaration: plugins/claude-nagger/compatibility.json
+  legacy_parity_gap: Discord Notification / Stop通知は未移行
+  marketplace_registration: 別scope。Anthropic demo marketplace manifestは使用しない
+
 acceptance_criteria:
   - missing project config で exit success、標準出力以外の file / network 副作用なし
   - 同一 event で他 plugin hook と共存し、claude-nagger entry を重複登録しない

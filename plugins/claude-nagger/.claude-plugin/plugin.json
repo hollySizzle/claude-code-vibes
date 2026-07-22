@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "claude-nagger",
+  "version": "0.1.0",
+  "description": "Project opt-in guardrails backed by the claude-nagger core CLI",
+  "author": {
+    "name": "HollySizzle"
+  },
+  "homepage": "https://github.com/hollySizzle/claude-nagger",
+  "repository": "https://github.com/hollySizzle/claude-nagger",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "hooks",
+    "guardrails"
+  ]
+}
