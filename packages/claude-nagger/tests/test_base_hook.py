@@ -456,7 +456,7 @@ class TestShouldSkipSession:
 
         with patch.object(hook, 'read_input', return_value={'session_id': 'test-session'}):
             with patch.object(hook, 'should_skip_session', return_value=True) as mock_skip:
-                with patch('application.install_hooks.ensure_config_exists'):
+                with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                     result = hook.run()
 
         assert result == 0
@@ -468,7 +468,7 @@ class TestShouldSkipSession:
 
         with patch.object(hook, 'read_input', return_value={'session_id': 'test-session', 'should_process': True}):
             with patch.object(hook, 'should_skip_session', return_value=False):
-                with patch('application.install_hooks.ensure_config_exists'):
+                with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                     result = hook.run()
 
         # process()が実行され正常終了
@@ -633,12 +633,40 @@ class TestRenameExpiredMarker:
 class TestRun:
     """run メソッドのテスト"""
 
+    def test_run_without_project_config_is_noop(self, tmp_path, monkeypatch):
+        """未採用projectでは入力処理せず設定も生成しない"""
+        monkeypatch.delenv('CLAUDE_PROJECT_DIR', raising=False)
+        monkeypatch.chdir(tmp_path)
+        hook = ConcreteHook(log_dir=tmp_path / 'logs')
+
+        with patch.object(hook, 'read_input') as mock_read:
+            result = hook.run()
+
+        assert result == ExitCode.SUCCESS
+        mock_read.assert_not_called()
+        assert not (tmp_path / '.claude-nagger').exists()
+
+    def test_run_with_project_config_processes_input(self, tmp_path, monkeypatch):
+        """採用済みprojectでは従来どおり入力処理する"""
+        nagger_dir = tmp_path / '.claude-nagger'
+        nagger_dir.mkdir()
+        (nagger_dir / 'config.yaml').write_text('{}\n')
+        monkeypatch.delenv('CLAUDE_PROJECT_DIR', raising=False)
+        monkeypatch.chdir(tmp_path)
+        hook = ConcreteHook(log_dir=tmp_path / 'logs')
+
+        with patch.object(hook, 'read_input', return_value={}) as mock_read:
+            result = hook.run()
+
+        assert result == ExitCode.SUCCESS
+        mock_read.assert_called_once_with()
+
     def test_run_no_input(self):
         """入力なしの場合は0を返す"""
         hook = ConcreteHook()
 
         with patch.object(hook, 'read_input', return_value={}):
-            with patch('application.install_hooks.ensure_config_exists'):
+            with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                 result = hook.run()
 
         assert result == 0
@@ -649,7 +677,7 @@ class TestRun:
 
         with patch.object(hook, 'read_input', return_value={'session_id': 'test'}):
             with patch.object(hook, 'should_skip_session', return_value=True):
-                with patch('application.install_hooks.ensure_config_exists'):
+                with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                     result = hook.run()
 
         assert result == 0
@@ -659,7 +687,7 @@ class TestRun:
         hook = ConcreteHook()
 
         with patch.object(hook, 'read_input', return_value={'should_process': False}):
-            with patch('application.install_hooks.ensure_config_exists'):
+            with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                 result = hook.run()
 
         assert result == 0
@@ -669,7 +697,7 @@ class TestRun:
         hook = ConcreteHook()
 
         with patch.object(hook, 'read_input', return_value={'should_process': True}):
-            with patch('application.install_hooks.ensure_config_exists'):
+            with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                 result = hook.run()
 
         assert result == 0
@@ -679,7 +707,7 @@ class TestRun:
         hook = ConcreteHook()
 
         with patch.object(hook, 'read_input', side_effect=Exception('error')):
-            with patch('application.install_hooks.ensure_config_exists'):
+            with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                 result = hook.run()
 
         assert result == 1
@@ -848,7 +876,7 @@ class TestRunWithExitCode:
         hook = ConcreteHook()
 
         with patch.object(hook, 'read_input', return_value={}):
-            with patch('application.install_hooks.ensure_config_exists'):
+            with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                 result = hook.run()
 
         assert result == ExitCode.SUCCESS
@@ -858,7 +886,7 @@ class TestRunWithExitCode:
         hook = ConcreteHook()
 
         with patch.object(hook, 'read_input', side_effect=Exception('error')):
-            with patch('application.install_hooks.ensure_config_exists'):
+            with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                 result = hook.run()
 
         assert result == ExitCode.ERROR

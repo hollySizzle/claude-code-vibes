@@ -29,6 +29,60 @@ class TestCLI:
         assert "claude-nagger" in captured.out
         assert "install-hooks" in captured.out
 
+    def test_hook_without_project_config_is_noop(self, tmp_path, monkeypatch):
+        """未採用projectではhookを初期化せず副作用なしで終了する"""
+        mock_hook_class = MagicMock()
+        mock_module = MagicMock()
+        mock_module.ImplementationDesignHook = mock_hook_class
+        monkeypatch.setitem(
+            sys.modules,
+            'domain.hooks.implementation_design_hook',
+            mock_module,
+        )
+        monkeypatch.delenv('CLAUDE_PROJECT_DIR', raising=False)
+        monkeypatch.chdir(tmp_path)
+
+        with patch.object(
+            sys,
+            'argv',
+            ['claude-nagger', 'hook', 'implementation-design'],
+        ):
+            result = main()
+
+        assert result == 0
+        mock_hook_class.assert_not_called()
+        assert not (tmp_path / '.claude-nagger').exists()
+
+    def test_hook_with_project_config_runs(self, tmp_path, monkeypatch):
+        """採用済みprojectでは従来どおりhookを実行する"""
+        nagger_dir = tmp_path / '.claude-nagger'
+        nagger_dir.mkdir()
+        (nagger_dir / 'config.yaml').write_text('{}\n')
+
+        mock_hook = MagicMock()
+        mock_hook.run.return_value = 0
+        mock_hook_class = MagicMock(return_value=mock_hook)
+        mock_module = MagicMock()
+        mock_module.ImplementationDesignHook = mock_hook_class
+        monkeypatch.setitem(
+            sys.modules,
+            'domain.hooks.implementation_design_hook',
+            mock_module,
+        )
+        monkeypatch.delenv('CLAUDE_PROJECT_DIR', raising=False)
+        monkeypatch.chdir(tmp_path)
+
+        with patch.object(
+            sys,
+            'argv',
+            ['claude-nagger', 'hook', 'implementation-design'],
+        ):
+            result = main()
+
+        assert result == 0
+        mock_hook_class.assert_called_once_with()
+        mock_hook.run.assert_called_once_with()
+
     def test_install_hooks_command(self, tmp_path, monkeypatch):
         """install-hooks コマンドが正しく実行される"""
         mock_cmd = MagicMock()

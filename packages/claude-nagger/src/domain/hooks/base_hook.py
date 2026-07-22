@@ -882,9 +882,10 @@ class BaseHook(ABC):
         # 処理開始時刻を記録
         self._start_time = time.time()
 
-        # 設定ファイル存在保証（自動生成）
-        from application.install_hooks import ensure_config_exists
-        ensure_config_exists()
+        # hook runtimeはproject設定を生成しない。未採用projectではno-opにする。
+        from application.hook_runtime import is_project_opted_in
+        if not is_project_opted_in():
+            return ExitCode.SUCCESS
 
         # 構造化ログでフック開始を記録
         self._structured_logger.log_hook_event(

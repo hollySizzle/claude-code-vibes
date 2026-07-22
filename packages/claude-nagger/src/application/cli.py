@@ -222,6 +222,13 @@ def main():
         return cmd.execute()
 
     if args.command == "hook":
+        # user / managed scopeにhookを導入していても、project configが無ければ
+        # hook classをimport・初期化せず、副作用なしで終了する。
+        if args.hook_name:
+            from application.hook_runtime import is_project_opted_in
+            if not is_project_opted_in():
+                return 0
+
         if args.hook_name == "session-startup":
             from domain.hooks.session_startup_hook import SessionStartupHook
             hook = SessionStartupHook()

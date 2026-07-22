@@ -820,7 +820,7 @@ class TestShouldSkipSessionOverride:
         with patch.object(SessionStartupHook, '_load_config', return_value={'enabled': False}):
             hook = SessionStartupHook()
             with patch.object(hook, 'read_input', return_value={'session_id': 'test', 'tool_name': 'Edit'}):
-                with patch('application.install_hooks.ensure_config_exists'):
+                with patch('application.hook_runtime.is_project_opted_in', return_value=True):
                     # should_processが呼ばれることを確認（enabled=Falseなのでスキップされる）
                     with patch.object(hook, 'should_process', return_value=False) as mock_sp:
                         result = hook.run()

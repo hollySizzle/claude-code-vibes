@@ -200,9 +200,9 @@ class RedmineDiscordHook(BaseHook):
         """
         self._start_time = time.time()
 
-        # 設定ファイル存在保証
-        from application.install_hooks import ensure_config_exists
-        ensure_config_exists()
+        from application.hook_runtime import is_project_opted_in
+        if not is_project_opted_in():
+            return ExitCode.SUCCESS
 
         self._structured_logger.log_hook_event(
             event_type="start",

@@ -19,6 +19,20 @@ def hook():
     return h
 
 
+class TestRunOptIn:
+    """独自run実装のproject opt-in境界テスト"""
+
+    def test_missing_config_is_noop(self, hook):
+        with patch(
+            'application.hook_runtime.is_project_opted_in',
+            return_value=False,
+        ), patch.object(hook, 'read_input') as mock_read:
+            result = hook.run()
+
+        assert result == 0
+        mock_read.assert_not_called()
+
+
 # === is_target_tool テスト ===
 
 class TestIsTargetTool:

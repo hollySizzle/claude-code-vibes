@@ -94,10 +94,12 @@ migration:
       - backup から削除済み claude-nagger entry だけを復元する
       - project policy と第三者 hook は変更しない
 
-known_implementation_gap:
-  observed_path: packages/claude-nagger/src/domain/hooks/base_hook.py
-  current_behavior: BaseHook.run が ensure_config_exists を呼び、設定が無い project に file を生成する
-  required_disposition: plugin adapter を既定有効化する前に、missing config を no-op とする境界へ変更して回帰 test を追加する
+runtime_opt_in_boundary:
+  status: implemented
+  dispatch_preflight: packages/claude-nagger/src/application/cli.py の hook dispatch は class import / 初期化前に project config を確認する
+  direct_run_defense: BaseHook と独自 run 実装は missing config を success / no-op とし、設定を生成しない
+  explicit_initialization: install-hooks の設定生成経路は維持する
+  residual_boundary: hook classの直接生成はtemp loggerを初期化し得るため、plugin adapterは副作用なしpreflightを持つCLI dispatchを使用する
 
 acceptance_criteria:
   - missing project config で exit success、標準出力以外の file / network 副作用なし

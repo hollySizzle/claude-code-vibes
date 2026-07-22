@@ -639,10 +639,10 @@ suggested_rules/
 
 
 def ensure_config_exists(project_root: Path = None) -> bool:
-    """設定ファイルの存在を保証する（冪等）
+    """明示的な初期化用に設定ファイルの存在を保証する（冪等）
     
     .claude-nagger/ディレクトリと設定ファイル群が存在しない場合は生成する。
-    フック実行時に自動的に呼び出される。
+    hook runtimeからは呼び出さない。未採用projectのhookはno-opとする。
     
     Args:
         project_root: プロジェクトルートパス（デフォルト: カレントディレクトリ）
