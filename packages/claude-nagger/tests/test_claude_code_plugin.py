@@ -11,6 +11,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PLUGIN_ROOT = REPO_ROOT / "plugins/claude-nagger"
 DISPATCH_SCRIPT = PLUGIN_ROOT / "scripts/dispatch-hook.sh"
+MARKETPLACE_PATH = REPO_ROOT / ".claude-plugin/marketplace.json"
 
 
 def _load_json(relative_path: str) -> dict:
@@ -47,6 +48,29 @@ def test_plugin_manifest_identifies_first_party_bundle():
     assert manifest["author"]["name"] == "HollySizzle"
     assert manifest["repository"].endswith("/claude-nagger")
     assert manifest["license"] == "MIT"
+
+
+def test_marketplace_identifies_actual_maintainer_and_plugin():
+    marketplace = json.loads(MARKETPLACE_PATH.read_text())
+    manifest = _load_json(".claude-plugin/plugin.json")
+
+    assert marketplace["name"] == "claude-nagger-marketplace"
+    assert marketplace["owner"] == {"name": "HollySizzle"}
+    provenance_fields = {
+        key: value
+        for key, value in marketplace.items()
+        if key != "$schema"
+    }
+    provenance_text = json.dumps(provenance_fields).lower()
+    assert "anthropic" not in provenance_text
+    assert "claude-code-plugins" not in provenance_text
+    assert len(marketplace["plugins"]) == 1
+
+    entry = marketplace["plugins"][0]
+    assert entry["name"] == manifest["name"]
+    assert entry["version"] == manifest["version"]
+    assert entry["author"] == manifest["author"]
+    assert entry["source"] == "./plugins/claude-nagger"
 
 
 def test_hooks_use_plugin_root_and_thin_dispatch():

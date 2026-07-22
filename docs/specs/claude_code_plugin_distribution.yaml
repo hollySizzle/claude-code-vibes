@@ -109,7 +109,16 @@ first_party_plugin_adapter:
   missing_core_policy: diagnosticをstderrへ出してfail-openする
   compatibility_declaration: plugins/claude-nagger/compatibility.json
   legacy_parity_gap: Discord Notification / Stop通知は未移行
-  marketplace_registration: 別scope。Anthropic demo marketplace manifestは使用しない
+  marketplace_registration: root .claude-plugin/marketplace.json にclaude-nagger first-party entryとして登録
+
+first_party_marketplace:
+  status: implemented
+  name: claude-nagger-marketplace
+  owner: HollySizzle
+  listed_plugins:
+    - claude-nagger
+  provenance_boundary: claude-nagger projectのfirst-party配布であり、Anthropic公式marketplaceではない
+  demo_sources: repository内に残る未掲載demo directoriesは配布対象外
 
 acceptance_criteria:
   - missing project config で exit success、標準出力以外の file / network 副作用なし
