@@ -1,0 +1,130 @@
+# claude-nagger Claude Code plugin 配布 architecture / guardrail 正本
+schema_version: 1
+
+purpose:
+  what: >-
+    claude-nagger を Claude Code plugin として配布する際の責任境界、配布単位、
+    marketplace 表記、導入・移行・rollback の非交渉 guardrail を定義する。
+  why:
+    - >-
+      project ごとの settings hook 直接編集は、project 数と階層が増えるほど
+      重複、version drift、削除漏れ、所有者不明の entry を増やすため。
+    - >-
+      Herdr や他の hook 製品と共存する環境では、hook 登録と policy 本体の
+      所有権を分離しないと、障害原因と rollback 対象を特定できないため。
+    - >-
+      plugin の導入だけで project file が暗黙生成・変更されると、未採用 project
+      にまで挙動が波及し、operator が意図した適用範囲を保証できないため。
+    - >-
+      「claude-nagger 公式」と「Anthropic 公式」を混同すると、配布元の provenance
+      と第三者による審査・保証範囲を誤認させるため。
+
+decision:
+  distribution_model:
+    plugin_classification: claude-nagger project が保守する first-party Claude Code plugin
+    install_scope: user または managed scope に一度導入する
+    project_opt_in: project root の .claude-nagger/config.yaml が適用意思の正本
+    project_override: project 固有 policy は .claude-nagger/ 配下で上書きする
+  responsibility_boundaries:
+    claude_nagger_core:
+      owns:
+        - rule matching
+        - decision と reason の生成
+        - project policy と state の解釈
+      does_not_own:
+        - Claude Code plugin の登録 lifecycle
+        - fleet 全体の desired-state 管理
+    claude_code_plugin_adapter:
+      owns:
+        - plugin manifest と hooks registration
+        - Claude Code hook payload から core への薄い dispatch
+        - core / Claude Code 互換性の宣言と検証
+      does_not_own:
+        - rule matching の再実装
+        - project policy の自動生成
+        - 他製品を含む汎用 hook composer
+    mozyo_bridge:
+      owns:
+        - fleet の desired plugin version と導入状態の宣言
+        - status、version drift、互換性、migration 結果の可視化
+        - operator 承認済み migration / rollback の orchestration
+      does_not_own:
+        - claude-nagger hook command の生成
+        - claude-nagger core logic の複製
+        - project ごとの hook array の恒常的な直接編集
+
+terminology:
+  claude_nagger_official: claude-nagger project が保守・署名・公開する first-party 配布物
+  anthropic_official: Anthropic が自身の marketplace 掲載物として受理・管理した場合のみ使用可能
+  community_listing: Anthropic community marketplace 等への第三者 listing; first-party ownership とは別属性
+
+guardrails:
+  must:
+    - plugin hook path は ${CLAUDE_PLUGIN_ROOT} を起点に解決する
+    - .claude-nagger/config.yaml が無い project では副作用なく no-op する
+    - dependency は明示的な install step または検証済み bundled artifact で供給する
+    - plugin、core、Claude Code の互換条件を machine-readable に宣言し test する
+    - migration 前に対象、差分、backup、rollback 手順を提示する
+    - legacy cleanup は claude-nagger が所有すると識別できる entry のみに限定する
+    - 配布元、保守主体、Anthropic 審査の有無を利用者に明示する
+  must_not:
+    - hook 実行中に .claude-nagger/ や設定ファイルを暗黙生成する
+    - hook 実行中に network 経由で package を install または update する
+    - plugin adapter に core の rule / decision logic を複製する
+    - Claude Code plugin loader が merge する hook を settings.json の hook array へ重複登録する
+    - 所有者を判定できない既存 hook を削除または上書きする
+    - scaffold 実行だけで user-global plugin を無断導入する
+    - Anthropic の demo marketplace manifest、owner、plugin 一覧を claude-nagger 配布物として再利用する
+    - Anthropic の受理前に配布物を「Anthropic 公式 plugin」と表現する
+
+migration:
+  from_legacy_settings_hooks:
+    preconditions:
+      - operator が変更対象 scope と plugin version を承認済み
+      - plugin / core / Claude Code の互換性 check が成功
+      - legacy entry の ownership を command signature 等で一意に判定可能
+    sequence:
+      - current settings と対象 entry の backup を取得する
+      - 削除予定 entry と保持対象 entry の diff を提示する
+      - plugin を install し、project opt-in 時だけ hook が動作することを検証する
+      - claude-nagger 所有の legacy entry だけを削除する
+      - status と rollback 情報を durable record に記録する
+    rollback:
+      - plugin を disable または uninstall する
+      - backup から削除済み claude-nagger entry だけを復元する
+      - project policy と第三者 hook は変更しない
+
+known_implementation_gap:
+  observed_path: packages/claude-nagger/src/domain/hooks/base_hook.py
+  current_behavior: BaseHook.run が ensure_config_exists を呼び、設定が無い project に file を生成する
+  required_disposition: plugin adapter を既定有効化する前に、missing config を no-op とする境界へ変更して回帰 test を追加する
+
+acceptance_criteria:
+  - missing project config で exit success、標準出力以外の file / network 副作用なし
+  - 同一 event で他 plugin hook と共存し、claude-nagger entry を重複登録しない
+  - adapter は core entrypoint を呼ぶだけで rule / decision logic を持たない
+  - legacy migration の dry-run、backup、ownership 限定 cleanup、rollback を test する
+  - 対応 Claude Code version と core protocol version の compatible / incompatible case を test する
+  - marketplace metadata が claude-nagger の実際の保守主体と配布元を示す
+
+non_goals:
+  - この文書だけで plugin adapter、marketplace、migration command を実装すること
+  - mozyo-bridge に claude-nagger の hook 実装を持たせること
+  - Anthropic marketplace への掲載または受理を保証すること
+  - Claude Code 以外の agent runtime を同一 adapter で抽象化すること
+
+external_authorities:
+  - name: Claude Code plugin reference
+    url: https://code.claude.com/docs/en/plugins-reference
+    governs: plugin manifest、hook path、component layout
+  - name: Claude Code plugin marketplaces
+    url: https://code.claude.com/docs/en/plugin-marketplaces
+    governs: first-party / community marketplace の配布手順
+  - name: Discover and install plugins
+    url: https://code.claude.com/docs/en/discover-plugins
+    governs: install scope と利用者操作
+
+related_documents:
+  - '@docs/apis/ClaudeCodeHooks.md'
+  - '@docs/apis/ClaudeCodePlugin.md'
+  - '@docs/specs/architecture.md'

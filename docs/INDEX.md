@@ -19,6 +19,7 @@
 ### specs - システム仕様
 - [[TODO: 機能名]仕様書](@docs/specs/_template.md)
 - [アーキテクチャ仕様書](@docs/specs/architecture.md)
+- [claude-nagger Claude Code plugin 配布 architecture・guardrail](@docs/specs/claude_code_plugin_distribution.yaml)
 - [claude-naggerテスト仕様書](@docs/specs/claude_nagger_test.md)
 - [並列subagent状態管理 設計仕様書](@docs/specs/parallel_subagent_state_management.md)
 
@@ -27,4 +28,3 @@
 
 ### tasks - 開発タスクガイド
 - [[TODO: タスク名]ガイド](@docs/tasks/_template.md)
-

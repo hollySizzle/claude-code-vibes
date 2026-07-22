@@ -26,6 +26,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 重要な制約事項
 
+### Claude Code plugin 配布
+
+- claude-nagger の plugin 配布、hook ownership、marketplace 表記、migration の正本は @docs/specs/claude_code_plugin_distribution.yaml とする
+
 ### 絶対的禁止事項
 
 ## 推奨ワークフロー: **Explore→Plan→Code→Verify**
